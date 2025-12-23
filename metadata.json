@@ -1,0 +1,7 @@
+{
+  "name": "Channel Changers Script Engine",
+  "description": "A cinematic AI Showrunner and production engine guiding you from seed idea to greenlit production package.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
