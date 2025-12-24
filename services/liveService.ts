@@ -70,7 +70,7 @@ export const connectLiveSession = async (
 
     // Connect to Gemini Live
     const sessionPromise = ai.live.connect({
-      model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+      model: 'gemini-3-flash-preview-native-audio-preview-09-2025',
       config: {
         responseModalities: [Modality.AUDIO],
         systemInstruction: LIVE_SYSTEM_INSTRUCTION,

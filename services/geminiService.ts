@@ -56,7 +56,7 @@ export const initializeChat = async (): Promise<void> => {
   if (client) {
     // Direct SDK mode (development)
     chatSession = client.chats.create({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         temperature: 0.8,
@@ -113,7 +113,7 @@ export const sendMessageToGemini = async (
     
     const result = await callGeminiProxy(
       'generateContent',
-      'gemini-2.5-flash',
+      'gemini-3-flash-preview',
       chatHistory,
       {
         temperature: 0.8,
@@ -190,7 +190,7 @@ export const generateTableRead = async (scriptSegment: string): Promise<string> 
   }
   
   const response = await client.models.generateContent({
-    model: "gemini-2.5-flash-preview-tts",
+    model: "gemini-3-flash-preview-preview-tts",
     contents: {
       parts: [{ text: `Perform a dramatic table read of the following script scene. Differentiate the voices clearly:\n\n${scriptSegment}` }]
     },
@@ -223,14 +223,14 @@ export const checkContinuity = async (scriptChunk: string, bibleContext: string)
   
   if (client) {
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt
     });
     return response.text || "Analysis failed.";
   } else {
     const result = await callGeminiProxy(
       'generateContent',
-      'gemini-2.5-flash',
+      'gemini-3-flash-preview',
       [{ role: 'user', parts: [{ text: prompt }] }]
     );
     return result.candidates?.[0]?.content?.parts?.[0]?.text || "Analysis failed.";
@@ -256,14 +256,14 @@ export const analyzeSubtext = async (scriptChunk: string): Promise<string> => {
   
   if (client) {
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt
     });
     text = response.text || "";
   } else {
     const result = await callGeminiProxy(
       'generateContent',
-      'gemini-2.5-flash',
+      'gemini-3-flash-preview',
       [{ role: 'user', parts: [{ text: prompt }] }]
     );
     text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -279,7 +279,7 @@ export const scoutLocation = async (query: string): Promise<any> => {
   
   if (client) {
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: `Find real-world locations matching this description: "${query}". Return a list of 3-5 specific places with descriptions.`,
       config: {
         tools: [{ googleMaps: {} }],
@@ -294,7 +294,7 @@ export const scoutLocation = async (query: string): Promise<any> => {
     // Simplified version for proxy mode
     const result = await callGeminiProxy(
       'generateContent',
-      'gemini-2.5-flash',
+      'gemini-3-flash-preview',
       [{ role: 'user', parts: [{ text: `Find real-world locations matching this description: "${query}". Return a list of 3-5 specific places with descriptions.` }] }]
     );
     return { 
@@ -318,14 +318,14 @@ export const punchUpScript = async (selection: string, instruction: string, cont
   
   if (client) {
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt
     });
     return response.text || selection;
   } else {
     const result = await callGeminiProxy(
       'generateContent',
-      'gemini-2.5-flash',
+      'gemini-3-flash-preview',
       [{ role: 'user', parts: [{ text: prompt }] }]
     );
     return result.candidates?.[0]?.content?.parts?.[0]?.text || selection;

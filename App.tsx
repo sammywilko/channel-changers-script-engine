@@ -155,7 +155,7 @@ function App() {
         await fetch('/api/gemini', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'warmup', model: 'gemini-2.5-flash' })
+          body: JSON.stringify({ action: 'warmup', model: 'gemini-3-flash-preview' })
         }).catch(() => {});
       } catch (e) {}
     };

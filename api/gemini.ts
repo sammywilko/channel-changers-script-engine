@@ -13,7 +13,7 @@ import { GoogleGenAI } from "@google/genai";
 
 // Model configuration - centralized
 const MODELS = {
-  text: "gemini-2.5-flash",
+  text: "gemini-3-flash-preview",
   image: "gemini-3-pro-image-preview",
 };
 
