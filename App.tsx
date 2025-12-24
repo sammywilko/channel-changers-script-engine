@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, Mic, LayoutGrid, FileText, History, Save, MapPin, Layout } from 'lucide-react';
+import { Menu, Mic, LayoutGrid, FileText, History, Save, MapPin, Layout, Upload, Download } from 'lucide-react';
 import PhaseIndicator from './components/PhaseIndicator';
 import ChatInterface from './components/ChatInterface';
 import ProjectSidebar from './components/ProjectSidebar';
@@ -9,13 +9,13 @@ import ScriptEditor from './components/ScriptEditor';
 import VersionHistory from './components/VersionHistory';
 import LocationScout from './components/LocationScout';
 import BeatBoard from './components/BeatBoard';
+import ScriptImportModal from './components/ScriptImportModal';
 import { initializeChat, sendMessageToGemini, generateConceptArt } from './services/geminiService';
 import { Message, Phase, ProjectState, Snapshot, CharacterProfile, VisualAsset } from './types';
 import { INITIAL_PROJECT_DATA } from './constants';
 
 function App() {
   const [projectState, setProjectState] = useState<ProjectState>(() => {
-    // Load from local storage
     const saved = localStorage.getItem('cc_project_state');
     const parsed = saved ? JSON.parse(saved) : null;
     return parsed ? {
@@ -35,20 +35,18 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Modes
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [isStoryboardMode, setIsStoryboardMode] = useState(false);
   const [isScriptMode, setIsScriptMode] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isLocationScoutOpen, setIsLocationScoutOpen] = useState(false);
   const [isBeatBoardOpen, setIsBeatBoardOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  // Persistence
   useEffect(() => {
     localStorage.setItem('cc_project_state', JSON.stringify(projectState));
   }, [projectState]);
 
-  // Save Snapshot
   const saveSnapshot = (label: string = "Auto-Save") => {
     const newSnapshot: Snapshot = {
         id: Date.now().toString(),
@@ -82,7 +80,37 @@ function App() {
       }));
   };
 
-  // Helper to process uploaded files for visual board
+  const handleScriptImport = (script: string, characters: string[], locations: string[], beats: string[]) => {
+    setProjectState(prev => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        scriptContent: script,
+        characters: Array.from(new Set([...prev.data.characters, ...characters])),
+        locations: Array.from(new Set([...prev.data.locations, ...locations])),
+        beats: [
+          ...prev.data.beats,
+          ...beats.map((action, idx) => ({
+            id: `imported_${Date.now()}_${idx}`,
+            action,
+            scene: 1,
+            characters: [],
+            notes: 'Imported from script'
+          }))
+        ]
+      }
+    }));
+    
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: 'model',
+      content: `📄 **Script Imported Successfully!**\n\n• ${characters.length} characters detected\n• ${locations.length} locations identified\n• ${beats.length} action beats extracted\n\nThe script has been loaded into the Script Editor.`,
+      timestamp: Date.now()
+    }]);
+    
+    setIsImportModalOpen(false);
+  };
+
   const handleVisualUpload = async (files: File[]) => {
       const newVisualAssets: VisualAsset[] = [];
       for (const file of files) {
@@ -112,7 +140,6 @@ function App() {
                     visuals: [...prev.data.visuals, ...newVisualAssets]
                 }
             }));
-            // Optionally add a system message to chat acknowledging upload
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 role: 'model',
@@ -122,24 +149,19 @@ function App() {
        }
   };
 
-  // Warmup the serverless function on page load
   useEffect(() => {
     const warmupApi = async () => {
       try {
-        // Silent ping to wake up the serverless function
         await fetch('/api/gemini', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'warmup', model: 'gemini-2.5-flash' })
-        }).catch(() => {}); // Ignore errors, this is just a warmup
-      } catch (e) {
-        // Silent fail - warmup is best-effort
-      }
+        }).catch(() => {});
+      } catch (e) {}
     };
     warmupApi();
   }, []);
 
-  // Initialize Chat with Greeting
   useEffect(() => {
     const init = async () => {
       try {
@@ -164,7 +186,6 @@ function App() {
   }, []);
 
   const handleSendMessage = useCallback(async (text: string, files: File[]) => {
-    // 1. Add User Message
     const newMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -185,8 +206,6 @@ function App() {
                        const base64 = (e.target.result as string).split(',')[1];
                        newMessage.images?.push(base64);
                        imageParts.push({ inlineData: { data: base64, mimeType: file.type } });
-                       
-                       // Add to Visual Bible as reference
                        newVisualAssets.push({
                            id: Date.now().toString() + Math.random().toString(),
                            type: 'reference',
@@ -205,10 +224,7 @@ function App() {
     if (newVisualAssets.length > 0) {
         setProjectState(prev => ({
             ...prev,
-            data: {
-                ...prev.data,
-                visuals: [...prev.data.visuals, ...newVisualAssets]
-            }
+            data: { ...prev.data, visuals: [...prev.data.visuals, ...newVisualAssets] }
         }));
     }
 
@@ -216,19 +232,15 @@ function App() {
     setIsLoading(true);
 
     try {
-      // 2. Call Gemini
       const { text: responseText, dataUpdate } = await sendMessageToGemini(text, imageParts);
 
-      // 3. Process Data Updates (JSON from AI)
       if (dataUpdate) {
         setProjectState((prevState) => {
           const newData = { ...prevState.data };
-          
           if (dataUpdate.title) newData.title = dataUpdate.title;
           if (dataUpdate.logline) newData.logline = dataUpdate.logline;
           if (dataUpdate.format) newData.format = dataUpdate.format;
           if (dataUpdate.tone) newData.tone = dataUpdate.tone;
-          
           if (dataUpdate.addCharacters) {
              newData.characters = Array.from(new Set([...newData.characters, ...dataUpdate.addCharacters]));
           }
@@ -236,15 +248,11 @@ function App() {
              const currentProfiles = [...(newData.characterProfiles || [])];
              dataUpdate.addCharacterProfiles.forEach((p: CharacterProfile) => {
                  const idx = currentProfiles.findIndex(cp => cp.name === p.name);
-                 if (idx >= 0) {
-                     currentProfiles[idx] = { ...currentProfiles[idx], ...p };
-                 } else {
-                     currentProfiles.push(p);
-                 }
+                 if (idx >= 0) currentProfiles[idx] = { ...currentProfiles[idx], ...p };
+                 else currentProfiles.push(p);
              });
              newData.characterProfiles = currentProfiles;
           }
-
           if (dataUpdate.addLocations) {
              newData.locations = Array.from(new Set([...newData.locations, ...dataUpdate.addLocations]));
           }
@@ -258,25 +266,18 @@ function App() {
               const prevScript = newData.scriptContent || "";
               newData.scriptContent = prevScript + (prevScript ? "\n\n" : "") + dataUpdate.scriptAppend;
           }
-          
-          return {
-            ...prevState,
-            data: newData
-          };
+          return { ...prevState, data: newData };
         });
       }
 
-      // 4. Add AI Response
       const responseMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'model',
         content: responseText,
         timestamp: Date.now(),
       };
-
       setMessages((prev) => [...prev, responseMsg]);
 
-      // 5. Handle Image Generation
       if (dataUpdate?.generateImagePrompt) {
         try {
             const imageData = await generateConceptArt(dataUpdate.generateImagePrompt);
@@ -288,7 +289,6 @@ function App() {
                 generatedImage: imageData
             };
             setMessages((prev) => [...prev, imageMsg]);
-
             const generatedAsset: VisualAsset = {
                 id: (Date.now() + 3).toString(),
                 type: 'generated',
@@ -298,15 +298,10 @@ function App() {
                     : dataUpdate.generateImagePrompt,
                 timestamp: Date.now()
             };
-
             setProjectState(prev => ({
                 ...prev,
-                data: {
-                    ...prev.data,
-                    visuals: [...prev.data.visuals, generatedAsset]
-                }
+                data: { ...prev.data, visuals: [...prev.data.visuals, generatedAsset] }
             }));
-
         } catch (imgErr) {
             console.error(imgErr);
         }
@@ -332,7 +327,6 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-[#050505] text-white font-sans overflow-hidden">
-      {/* Top Navigation */}
       <header className="flex-none h-16 bg-cinematic-900 border-b border-cinematic-700 flex items-center justify-between px-4 z-20 shadow-xl">
         <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-cinematic-accent rounded flex items-center justify-center font-bold text-white shadow-lg">CC</div>
@@ -377,6 +371,15 @@ function App() {
             
             <div className="h-6 w-[1px] bg-cinematic-700 mx-1"></div>
 
+            {/* 🆕 IMPORT/EXPORT BUTTON */}
+            <button 
+                onClick={() => setIsImportModalOpen(true)} 
+                className="p-2 text-green-400 hover:text-green-300 hover:bg-cinematic-800 rounded-full hidden sm:block" 
+                title="Import/Export Script"
+            >
+                <Upload size={20} />
+            </button>
+
             <button onClick={() => setIsLocationScoutOpen(true)} className="p-2 text-cinematic-400 hover:text-white hover:bg-cinematic-800 rounded-full hidden sm:block" title="Location Scout">
                 <MapPin size={20} />
             </button>
@@ -415,10 +418,8 @@ function App() {
         </div>
       </header>
 
-      {/* Phase Indicator */}
       <PhaseIndicator currentPhase={projectState.currentPhase} />
 
-      {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative">
         <ChatInterface 
             messages={messages} 
@@ -434,7 +435,6 @@ function App() {
         />
       </div>
 
-      {/* Modals */}
       {isLiveMode && <LiveRoom onClose={() => setIsLiveMode(false)} />}
       
       {isLocationScoutOpen && (
@@ -487,6 +487,14 @@ function App() {
             onClose={() => setIsHistoryOpen(false)}
           />
       )}
+
+      {/* 🆕 IMPORT/EXPORT MODAL */}
+      <ScriptImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleScriptImport}
+        currentProject={projectState.data}
+      />
     </div>
   );
 }
