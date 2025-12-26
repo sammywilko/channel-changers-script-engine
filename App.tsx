@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, Mic, LayoutGrid, FileText, History, Save, MapPin, Layout, Upload, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Menu, Mic, LayoutGrid, FileText, History, Save, MapPin, Layout, Upload, Download, Cloud, CloudOff, Loader2 } from 'lucide-react';
 import PhaseIndicator from './components/PhaseIndicator';
 import ChatInterface from './components/ChatInterface';
 import ProjectSidebar from './components/ProjectSidebar';
@@ -11,10 +11,25 @@ import LocationScout from './components/LocationScout';
 import BeatBoard from './components/BeatBoard';
 import ScriptImportModal from './components/ScriptImportModal';
 import { initializeChat, sendMessageToGemini, generateConceptArt } from './services/geminiService';
+import { syncProject, isSyncAvailable, SyncStatus } from './services/syncService';
 import { Message, Phase, ProjectState, Snapshot, CharacterProfile, VisualAsset } from './types';
 import { INITIAL_PROJECT_DATA } from './constants';
 
 function App() {
+  // Project ID for Supabase sync (generate once per browser session)
+  const [projectId] = useState<string>(() => {
+    const savedId = localStorage.getItem('cc_project_id');
+    if (savedId) return savedId;
+    const newId = crypto.randomUUID();
+    localStorage.setItem('cc_project_id', newId);
+    return newId;
+  });
+
+  // Cloud sync status
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(() =>
+    isSyncAvailable() ? 'idle' : 'offline'
+  );
+
   const [projectState, setProjectState] = useState<ProjectState>(() => {
     const saved = localStorage.getItem('cc_project_state');
     const parsed = saved ? JSON.parse(saved) : null;
@@ -43,9 +58,16 @@ function App() {
   const [isBeatBoardOpen, setIsBeatBoardOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  // Save to localStorage AND sync to Supabase (debounced)
   useEffect(() => {
+    // Always save locally first (instant)
     localStorage.setItem('cc_project_state', JSON.stringify(projectState));
-  }, [projectState]);
+
+    // Sync to cloud (debounced - 2 second delay)
+    if (isSyncAvailable()) {
+      syncProject(projectId, projectState, setSyncStatus);
+    }
+  }, [projectState, projectId]);
 
   const saveSnapshot = (label: string = "Auto-Save") => {
     const newSnapshot: Snapshot = {
@@ -354,6 +376,20 @@ function App() {
         </div>
 
         <div className="flex items-center gap-2">
+            {/* Cloud Sync Status Indicator */}
+            <div className="flex items-center gap-1 px-2 py-1 rounded text-xs" title={
+              syncStatus === 'synced' ? 'Synced to cloud' :
+              syncStatus === 'syncing' ? 'Syncing...' :
+              syncStatus === 'error' ? 'Sync error' :
+              syncStatus === 'offline' ? 'Offline mode' : 'Ready'
+            }>
+              {syncStatus === 'syncing' && <Loader2 size={14} className="animate-spin text-blue-400" />}
+              {syncStatus === 'synced' && <Cloud size={14} className="text-green-400" />}
+              {syncStatus === 'error' && <CloudOff size={14} className="text-red-400" />}
+              {syncStatus === 'offline' && <CloudOff size={14} className="text-cinematic-500" />}
+              {syncStatus === 'idle' && <Cloud size={14} className="text-cinematic-500" />}
+            </div>
+
             <button
                 onClick={() => saveSnapshot(`Manual Save ${new Date().toLocaleTimeString()}`)}
                 className="p-2 text-cinematic-400 hover:text-green-400 transition-colors"
