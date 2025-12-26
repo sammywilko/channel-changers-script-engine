@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Layout, Plus, GripVertical, Trash } from 'lucide-react';
 import { ProjectData } from '../types';
+import { MentionableInput } from './MentionableInput';
 
 interface BeatBoardProps {
   data: ProjectData;
@@ -92,13 +93,24 @@ const BeatBoard: React.FC<BeatBoardProps> = ({ data, onUpdateBeats, onClose }) =
                         {index + 1}
                     </div>
                     <div className="flex-1">
-                        <textarea
-                            value={beat}
-                            onChange={(e) => updateBeatText(index, e.target.value)}
-                            onBlur={handleBlur}
-                            className="w-full bg-transparent text-gray-200 resize-none focus:outline-none focus:text-white text-sm md:text-base"
-                            rows={Math.max(2, Math.ceil(beat.length / 80))}
-                        />
+                        <MentionableInput
+                            sourceApp="script-engine"
+                            projectId={data.id}
+                            contextType="beat"
+                            contextId={`beat-${index}`}
+                            allowCreate={true}
+                        >
+                            {(ref) => (
+                                <textarea
+                                    ref={ref as React.RefObject<HTMLTextAreaElement>}
+                                    value={beat}
+                                    onChange={(e) => updateBeatText(index, e.target.value)}
+                                    onBlur={handleBlur}
+                                    className="w-full bg-transparent text-gray-200 resize-none focus:outline-none focus:text-white text-sm md:text-base"
+                                    rows={Math.max(2, Math.ceil(beat.length / 80))}
+                                />
+                            )}
+                        </MentionableInput>
                     </div>
                     <button onClick={() => deleteBeat(index)} className="text-cinematic-600 hover:text-red-500 transition-colors">
                         <Trash size={18} />

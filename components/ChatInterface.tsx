@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Send, Paperclip, Loader2, Image as ImageIcon, Download } from 'lucide-react';
 import { Message } from '../types';
+import { MentionableInput } from './MentionableInput';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -170,15 +171,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
             <Paperclip size={20} />
           </button>
           
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message or ask for 'Visual Concept Art'..."
-            className="flex-1 bg-transparent text-white placeholder-gray-500 resize-none max-h-32 min-h-[44px] py-2.5 px-2 focus:outline-none scrollbar-hide text-base"
-            rows={1}
-            style={{ minHeight: '44px' }}
-          />
+          <MentionableInput
+            sourceApp="script-engine"
+            contextType="chat"
+            allowCreate={true}
+          >
+            {(ref) => (
+              <textarea
+                ref={ref as React.RefObject<HTMLTextAreaElement>}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message or ask for 'Visual Concept Art'..."
+                className="flex-1 bg-transparent text-white placeholder-gray-500 resize-none max-h-32 min-h-[44px] py-2.5 px-2 focus:outline-none scrollbar-hide text-base"
+                rows={1}
+                style={{ minHeight: '44px' }}
+              />
+            )}
+          </MentionableInput>
           
           <button
             onClick={handleSend}

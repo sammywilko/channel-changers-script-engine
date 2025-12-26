@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, Download, Play, AlertTriangle, Eye, Mic, List, ChevronRight, Sparkles, X } from 'lucide-react';
 import { generateTableRead, checkContinuity, analyzeSubtext, punchUpScript } from '../services/geminiService';
 import { ProjectData } from '../types';
+import { MentionableInput } from './MentionableInput';
 
 interface ScriptEditorProps {
   data: ProjectData;
@@ -204,14 +205,24 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({ data, onUpdateScript, onClo
 
          {/* Editor Area */}
          <div className="flex-1 relative bg-[#E8E8E8] text-black">
-             <textarea 
-                value={script}
-                onChange={(e) => setScript(e.target.value)}
-                onSelect={handleSelect}
-                className="w-full h-full p-8 md:p-16 font-mono text-base md:text-lg focus:outline-none resize-none screenplay-editor leading-relaxed"
-                placeholder="Start writing your masterpiece..."
-                spellCheck={false}
-             />
+             <MentionableInput
+                sourceApp="script-engine"
+                projectId={data.id}
+                contextType="script"
+                allowCreate={true}
+             >
+                {(ref) => (
+                    <textarea
+                        ref={ref as React.RefObject<HTMLTextAreaElement>}
+                        value={script}
+                        onChange={(e) => setScript(e.target.value)}
+                        onSelect={handleSelect}
+                        className="w-full h-full p-8 md:p-16 font-mono text-base md:text-lg focus:outline-none resize-none screenplay-editor leading-relaxed"
+                        placeholder="Start writing your masterpiece..."
+                        spellCheck={false}
+                    />
+                )}
+             </MentionableInput>
              
              {/* Floating Context Menu for Punch-Up */}
              {selection && (
