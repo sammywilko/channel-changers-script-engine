@@ -112,13 +112,7 @@ function App() {
         locations: Array.from(new Set([...prev.data.locations, ...locations])),
         beats: [
           ...prev.data.beats,
-          ...beats.map((action, idx) => ({
-            id: `imported_${Date.now()}_${idx}`,
-            action,
-            scene: 1,
-            characters: [],
-            notes: 'Imported from script'
-          }))
+          ...beats
         ]
       }
     }));

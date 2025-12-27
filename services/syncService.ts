@@ -98,7 +98,10 @@ function fromDbRow(row: ProjectRow): ProjectState {
       scenesWritten: row.scenes_written || 0,
       productionNotes: row.production_notes || [],
       snapshots: [], // Loaded separately
-      visuals: row.visuals || [],
+      visuals: (row.visuals || []).map((v: { id: string; type: string; data: string; label: string; timestamp: number }) => ({
+        ...v,
+        type: (v.type === 'reference' || v.type === 'generated') ? v.type : 'generated' as const
+      })),
     },
   };
 }

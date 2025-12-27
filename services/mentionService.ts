@@ -366,6 +366,3 @@ export const mentionService = {
       .slice(0, 30);
   }
 };
-
-// Export types for use in components
-export type { SharedAsset, AssetMention, CreateAssetInput };

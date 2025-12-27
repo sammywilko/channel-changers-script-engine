@@ -38,6 +38,7 @@ export interface Snapshot {
 }
 
 export interface ProjectData {
+  id?: string;
   title: string;
   logline: string;
   format: string;
