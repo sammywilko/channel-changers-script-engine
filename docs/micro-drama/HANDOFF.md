@@ -10,23 +10,20 @@ Companions in this folder: `STRATEGY-REPORT.md` (market and investment case),
 
 ## 1. Where things stand
 
-Two repositories, two branches, one open PR.
+Two repositories. Groundwork merged, proof slice pushed and awaiting CI.
 
 | Repo | Branch | State |
 |---|---|---|
-| `sammywilko/channel-changers-script-engine` | `claude/channel-changers-micro-dramas-x60lq3` | Pushed. Docs only: strategy report, playbook, build plan, this handoff. No PR. |
-| `channelchangers/cc-gensuite` | `claude/microdrama-pipeline` | Pushed. **PR #12 open.** 4 commits, code plus specs. |
+| `sammywilko/channel-changers-script-engine` | `claude/channel-changers-micro-dramas-x60lq3` | Pushed. Docs only: strategy report, playbook, build plan, video brief, this handoff. No PR. |
+| `channelchangers/cc-gensuite` | `main` | **PR #12 merged at `46f035c`**, all 8 checks green. Drama corpus, golden suite, seam fixture, three specs. |
+| `channelchangers/cc-gensuite` | `claude/microdrama-proof-slice` | Pushed, 3 commits off `fb133cb`. **No PR yet, so CI has not run.** |
 
-**PR #12**: https://github.com/channelchangers/cc-gensuite/pull/12
-
-At the time of writing, 7 of 8 CI checks green (`bff`, `studio-build`,
-`typecheck (backend)`, `typecheck (frontend)`, `deny-list`,
-`docker-build (backend)`, `docker-build (frontend)`), with `lock-suite` still
-running. No review comments. Check the PR for the final verdict.
-
-**Nothing on that branch changes behaviour.** The drama prompt corpus exists but
+The merged groundwork changes no behaviour. The drama prompt corpus exists but
 nothing routes to it, so both estates render exactly as before. That inertness is
 deliberate: it is what let the golden bytes be captured honestly.
+
+The proof-slice branch is the first change that does alter behaviour, and only
+for a session configured vertical. See section 1c.
 
 Also published, for investor and broadcaster conversations:
 https://claude.ai/artifact/9gdv4n6DCLjpURFVpYgm8t
@@ -82,6 +79,76 @@ Verified against `main` on 11 Oct 2026. Three small changes, in this order:
    proof look wrong rather than merely imperfect.
 
 That is the whole engineering prerequisite. Everything else in section 5 waits.
+
+## 1c. Proof slice: what is done, and the one piece deliberately left
+
+Added 11 Oct 2026. Branch `claude/microdrama-proof-slice`, three commits off
+`fb133cb`. Changes 2 and 3 above are done. Change 1 is not, for a reason that
+matters.
+
+### Done: the aspect chokepoint (`60d2a12`, `b064ff9`)
+
+`runImageGen` resolved the frame as `input.aspectRatio ?? '16:9'`. That literal
+is why `autogen_sessions.default_aspect` existed, was writeable through the
+settings patch, and was read by nothing. It now resolves from the session, so
+all five callers that pass no aspect are corrected without being touched.
+
+The column is free text, so the resolver degrades to `'16:9'` on an unrecognised
+value, a missing row, or a failed query. A generation that died because somebody
+typed nonsense into a settings field would be a worse bug than the one being
+fixed. The read is lazy: a caller that already passed an aspect pays no round
+trip. Supporting that, `ASPECT_RATIOS` and `isAspectRatio` now live beside the
+`AspectRatio` union in `generation/types.ts`, which previously had no runtime
+counterpart at all.
+
+New hermetic suite, `imagegen.session-aspect.test.ts`, 9 assertions, no DB and
+no model calls. **Seeded red** by restoring the literal: exit 1,
+`'16:9' !== '9:16'`. Restored: exit 0.
+
+### Done: element base refs (`62ecda7`)
+
+Four hardcoded `aspectRatio: '16:9'` sites removed from the element dispatcher,
+so a locked character's founder image now follows the session. This was the
+defect that would have made the proof look wrong rather than merely imperfect,
+because that founder image is the i2i anchor for every shot generated from it.
+The lock submodal's "Fixed at 1K and 16:9" copy was display-only and is now
+corrected; the component never sent the field.
+
+### Not done: routing the drama corpus, and why
+
+Section 5 Step 1 says to add `'drama-system'` to `TypedPromptBaseName` and give
+`getSystemPrompt(type)` a register argument. **Do not do that as written.**
+`getSystemPrompt` in `agent-prompts.ts:104` has no callers. It is an unused
+facade, so routing it would wire up something nothing invokes and produce a
+green diff that changes nothing.
+
+The actual call sites of the merged drama corpus are:
+
+| Drama prompt | Live caller |
+|---|---|
+| `drama-creative-direction-system` | `preflight-cd.ts:287`, `preflight-cd.ts:396` |
+| `drama-scene-anchor-builder` | `anchor-lifecycle.ts:70` |
+| `drama-system-type-1` / `-type-2` | none |
+
+So the routing change is two edits in `preflight-cd.ts` and one in
+`anchor-lifecycle.ts`, reading a register off the session, plus a decision about
+whether `drama-system-type-*` has a home at all or should be deleted until a
+caller exists. `chooseType()` still needs no change: the drama filenames keep the
+`-type-1` / `-type-2` suffix.
+
+The register must resolve from session or registry data, never a literal.
+`series-registry-gate.sh` fails on `?? 'drama'`, on two literals on one
+executable line, and on `series === 'x'`. A column on `autogen_sessions`
+defaulting to the documentary register is the clean shape, and `default_aspect`
+is now the working precedent for exactly that pattern.
+
+### Verification run before those three commits
+
+Five gates: `source-estate-gate` 0, `denylist-check` 0, `series-registry-gate` 0,
+`byte-reader-gate` 0, `scoped-routes-gate` 0. Both typechecks 0. Four suites:
+`imagegen.test.ts` 76 assertions across 18 cases, `imagegen.session-aspect`
+9 assertions, `prompts.documentary-golden` 6 assertions, `prompts.test.ts` all
+passed. Zero em dashes in any added line (8 pre-existing on `main`, untouched).
 
 ### Then, in parallel rather than after
 
