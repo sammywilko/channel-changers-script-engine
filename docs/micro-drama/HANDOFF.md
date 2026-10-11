@@ -33,6 +33,86 @@ https://claude.ai/artifact/9gdv4n6DCLjpURFVpYgm8t
 
 ---
 
+## 1b. What to do next, and why it is not what section 5 says
+
+Added 11 Oct 2026, after the groundwork merged. Section 5 still lists the tasks
+in dependency order, which is correct engineering sequencing and the wrong
+commercial sequencing. Read this first and treat section 5 as the task catalogue
+rather than the running order.
+
+### The case against building the authoring service next
+
+The research says three things that together change the order of work:
+
+- **80 to 90% of individual titles never recoup.** This is a portfolio business,
+  not a per-title one.
+- **The platforms themselves run on roughly 6% EBITDA.** ReelShort does about
+  $1.05bn of revenue for about $63m of EBITDA, because marketing runs at five to
+  nine times production cost.
+- **Downloads grew 140% year on year while revenue grew 20%.** Revenue per
+  install is falling.
+
+A brief-to-screen authoring service is months of work whose value is throughput.
+Throughput is worth having only once something is selling, and nothing is selling
+yet. Building the factory first is the expensive version of this plan.
+
+What actually gates the first pound of revenue is a finished sample. Platforms do
+not read decks: the submission package for the largest of them is a synopsis, a
+20-episode breakdown and **three to five completed episodes at final production
+quality**. Every route to market in the strategy report begins with footage.
+
+### The proof slice: the smallest change set that produces a sellable episode
+
+Verified against `main` on 11 Oct 2026. Three small changes, in this order:
+
+1. **Route the drama corpus.** Currently `prompts.ts` contains zero references to
+   the drama files, so the merged corpus is inert. Section 5 Step 1 has the three
+   edits. The register must resolve from session or registry data, never a
+   literal.
+2. **Fix the aspect chokepoint.** `imagegen.ts:494` is still
+   `input.aspectRatio ?? '16:9'`. Resolve it from the session instead.
+   `autogen_sessions.default_aspect` already exists on the session type
+   (`sessions.ts:51`) and is read by nothing, so the resolution path is available
+   and simply unused. Five callers pass no aspect at all, so they are fixed
+   without being touched. Risk is nil: the column defaults to `'16:9'`.
+3. **Make element base refs respect aspect.** Four hardcoded sites in
+   `element-candidates.ts` (1692, 1740, 1960, 2002) plus the fixed frontend
+   constant. Without this a locked character's founder image is landscape and
+   then anchors every vertical shot, which is the one defect that would make the
+   proof look wrong rather than merely imperfect.
+
+That is the whole engineering prerequisite. Everything else in section 5 waits.
+
+### Then, in parallel rather than after
+
+- **Produce one ten-episode proof season.** British register. The strongest
+  hypothesis from the playbook is heritage and class rather than corporate
+  wealth, with psychological horror as the second lane because it is
+  under-supplied and suits portrait framing. Label it a hypothesis: no source
+  tests it, and ten episodes is the cheapest way to find out.
+- **Instrument the keeper rate from the first episode**, not later. It is the
+  dominant cost variable and the retry band currently in `job-estimate.ts` comes
+  from documentary stills and has no micro-drama data behind it. Ten episodes of
+  real data replaces a guess that the whole financial model rests on.
+- **Get the revenue-share number.** MIPCOM Cannes has passed. Content London is
+  30 Nov to 3 Dec and runs a vertical summit. This is still the single most
+  important missing figure and it will not come from desk research.
+- **Open one brand-funded conversation.** No public price anchor exists, which
+  means the first mover sets it. It is fee-for-service, it uses the scripting
+  strength, and it sidesteps the recoupment problem entirely.
+
+### What this ordering protects against
+
+If the proof season is good, it unlocks tier-2 platform submission, the RoseBerry
+and Epis route, a brand conversation and the broadcaster pitch, all of which want
+footage. If it is bad, we have spent one ten-episode build rather than a quarter
+on a pipeline for content nobody wanted. Either outcome is worth more than more
+planning.
+
+The authoring service is still the right thing to build. It is the right thing to
+build **second**, sized by what the proof season teaches about where the human
+hours actually go.
+
 ## 2. Get a working environment first
 
 The suite is at `/home/user/cc-gensuite` in a fresh session (clone it if absent).
