@@ -112,8 +112,13 @@ corpus landed before the routing. It has been proven to go red, so trust it.
 
 ## Already decided. Do not relitigate without asking the user.
 
-1. Seedance: third provider, isolated behind a flag, off by default, never
-   reachable from the sibling estate's deployment.
+1. Seedance: ALREADY BUILT and shipped dark on main as of cb909d8. Do not
+   rebuild it. It is Seedance 2.5 with token-based pricing confirmed against a
+   real invoice, durable fire tracking, routes, frontend controls and a
+   reconciliation runbook. Flags: seedance_enabled, seedance_allowed_series (a
+   pilot allowlist), seedance_max_cents_per_fire and
+   seedance_confirm_above_cents. Only two test suites are still missing: an
+   isolation suite and a route gate.
 2. The brief runs straight through to episode scripts in one pass, then a human
    reviews and amends before anything reaches AutoGen.
 3. The authoring half is a new service POSTing to from-script. Not in the suite.

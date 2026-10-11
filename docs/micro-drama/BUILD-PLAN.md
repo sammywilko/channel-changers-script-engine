@@ -246,6 +246,28 @@ earlier wrong assessment, it is not supported end to end. What needs doing:
 
 ### B3. Seedance provider
 
+> **CORRECTION, 11 Oct 2026.** Seedance is **already built and shipped dark on
+> `main`** (verified at `cb909d8`), and more thoroughly than this section
+> assumed. Do not rebuild it. What exists: `generation/seedance-video.ts` and
+> `seedance-video-failure.ts` with suites, `seedance-fires.ts` for durable fire
+> tracking, routes with pg tests, `frontend/src/features/seedance/`,
+> `docs/SEEDANCE-PLAN.md` and `docs/runbooks/seedance-reconciliation.md`. It is
+> Seedance **2.5**, not 2.0, and the pricing rows are token-based and confirmed
+> against a real invoice rather than estimated. `VideoProviderName` is now a
+> named type, so the `'vertex' | 'omni'` union described below no longer exists.
+>
+> The shipped flag design is better than the one specified here: alongside
+> `seedance_enabled` there is `seedance_allowed_series` (a pilot allowlist),
+> `seedance_max_cents_per_fire` (a hard per-fire ceiling) and
+> `seedance_confirm_above_cents`. That per-fire ceiling is worth copying for the
+> episode budget cap problem in the open rulings.
+>
+> Still genuinely missing, and worth doing: an isolation suite
+> (`seedance-isolation.test.ts`) and a route gate
+> (`generate-video.seedance-gate.test.ts`). See
+> `cc-gensuite/docs/micro-drama-test-strategy.md` Package E.
+
+
 The extension point is clean. `backend/src/lib/generation/video-types.ts` declares
 `interface VideoGenerationProvider` with `readonly name: 'vertex' | 'omni'`, and
 `generation/index.ts` has `getVideoProvider(model?)` dispatching by model id.
