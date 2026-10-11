@@ -308,6 +308,15 @@ A second inference worth testing alongside it: **psychological horror in a Briti
 
 ## 12. Tooling specification — Series Architect
 
+> **⚠️ Superseded — see [BUILD-PLAN.md](./BUILD-PLAN.md).**
+> This section was written before the CC Gen Suite (`channelchangers/cc-gensuite`)
+> was readable, and assumes the work lands in this repo's Script Engine. It does
+> not. Gen Suite is deliberately script-in/image-out and already carries a
+> `POST /api/autogen/sessions/from-script` seam built for an upstream authoring
+> service. The craft rules in §1–§11 and §13 stand; the build target in this
+> section does not.
+
+
 How the above encodes into the Gen Suite. This is the build brief.
 
 ### 12.1 New phase pipeline
