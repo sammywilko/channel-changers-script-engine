@@ -90,11 +90,15 @@ Route the drama prompt corpus. Three edits, all small:
 chooseType() needs no change: the drama filenames keep the -type-1 / -type-2
 suffix so the A/B routing works untouched.
 
-The trap: the register must resolve from session or registry data, NEVER a string
-literal. infra/series-registry-gate.sh fails on ?? 'drama', on two literals on
-one executable line, and on series === 'x'. It bans 'demo' too, so you cannot
-develop against a seeded slug by hardcoding it. A column on autogen_sessions
-defaulting to the documentary register is the clean shape.
+This task is DONE on branch claude/microdrama-drama-register, and not as written
+above: getSystemPrompt had no callers and has been deleted. Read HANDOFF.md
+section 1c before touching prompt routing.
+
+Correction, since an earlier version of this prompt said otherwise:
+infra/series-registry-gate.sh bans only the eight legacy series slugs in
+infra/series-registry-slugs.sh, and only when quoted. It does NOT reject
+?? 'drama' or register === 'drama'. It does ban 'demo', so you cannot develop
+against a seeded slug by hardcoding it.
 
 Also extend the catalogue in backend/src/lib/autogen/prompts.test.ts
 (SHARED_PROMPTS / TYPED_BASE_NAMES around lines 47 to 66, and

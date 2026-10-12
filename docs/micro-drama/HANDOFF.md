@@ -16,7 +16,8 @@ Two repositories. Groundwork merged, proof slice pushed and awaiting CI.
 |---|---|---|
 | `sammywilko/channel-changers-script-engine` | `claude/channel-changers-micro-dramas-x60lq3` | Pushed. Docs only: strategy report, playbook, build plan, video brief, this handoff. No PR. |
 | `channelchangers/cc-gensuite` | `main` | **PR #12 merged at `46f035c`**, all 8 checks green. Drama corpus, golden suite, seam fixture, three specs. |
-| `channelchangers/cc-gensuite` | `claude/microdrama-proof-slice` | Pushed, 3 commits off `fb133cb`. **No PR yet, so CI has not run.** |
+| `channelchangers/cc-gensuite` | `main` | **PR #13 merged at `5534cb8`**, all 8 checks green including `lock-suite`. The aspect chokepoint. |
+| `channelchangers/cc-gensuite` | `claude/microdrama-drama-register` | Pushed, 5 commits off `a93c115`. The drama register. **No PR yet, so CI has not run it** -- and the schema assertions plus the regenerated golden manifest are exactly what needs CI. |
 
 The merged groundwork changes no behaviour. The drama prompt corpus exists but
 nothing routes to it, so both estates render exactly as before. That inertness is
@@ -114,33 +115,52 @@ because that founder image is the i2i anchor for every shot generated from it.
 The lock submodal's "Fixed at 1K and 16:9" copy was display-only and is now
 corrected; the component never sent the field.
 
-### Not done: routing the drama corpus, and why
+### Done: routing the drama corpus (branch `claude/microdrama-drama-register`)
 
-Section 5 Step 1 says to add `'drama-system'` to `TypedPromptBaseName` and give
-`getSystemPrompt(type)` a register argument. **Do not do that as written.**
-`getSystemPrompt` in `agent-prompts.ts:104` has no callers. It is an unused
-facade, so routing it would wire up something nothing invokes and produce a
-green diff that changes nothing.
+Section 5 Step 1 said to add `'drama-system'` to `TypedPromptBaseName` and give
+`getSystemPrompt(type)` a register argument. **That was wrong and was not done.**
+`getSystemPrompt` had no callers: it was the one member of the typed prompt
+family with no live accessor, so routing it would have produced a green diff
+that changed nothing. It and both its `system-type-*` files are now deleted,
+along with the two `drama-system-type-*` files that mirrored them.
 
-The actual call sites of the merged drama corpus are:
+The real seams, and what now happens at each:
 
-| Drama prompt | Live caller |
-|---|---|
-| `drama-creative-direction-system` | `preflight-cd.ts:287`, `preflight-cd.ts:396` |
-| `drama-scene-anchor-builder` | `anchor-lifecycle.ts:70` |
-| `drama-system-type-1` / `-type-2` | none |
+| Prompt | Live caller | Routed |
+|---|---|---|
+| `drama-creative-direction-system` | `preflight-cd.ts:289`, `:398` | yes, both passes |
+| `drama-scene-anchor-builder` | `anchor-lifecycle.ts:75` | yes |
 
-So the routing change is two edits in `preflight-cd.ts` and one in
-`anchor-lifecycle.ts`, reading a register off the session, plus a decision about
-whether `drama-system-type-*` has a home at all or should be deleted until a
-caller exists. `chooseType()` still needs no change: the drama filenames keep the
-`-type-1` / `-type-2` suffix.
+The register lives on `autogen_sessions.prompt_register`, text NOT NULL DEFAULT
+`'documentary'`, with a split CHECK following the `prompt_template_type`
+precedent immediately above it in `schema.ts`. `asPromptRegister` degrades an
+unrecognised value, a NULL or a missing session row to documentary. It is
+settable through the session settings PATCH, validated there because the CHECK
+would otherwise turn a typo into a 500.
 
-The register must resolve from session or registry data, never a literal.
-`series-registry-gate.sh` fails on `?? 'drama'`, on two literals on one
-executable line, and on `series === 'x'`. A column on `autogen_sessions`
-defaulting to the documentary register is the clean shape, and `default_aspect`
-is now the working precedent for exactly that pattern.
+The register argument is REQUIRED, not defaulted, on both getters. There are two
+creative-direction call sites and a default would let one be missed silently,
+surfacing as a self-healed drama shot quietly reverting to documentary
+direction: well-formed output, parsing correctly, written in the wrong voice.
+
+`chooseType()` needed no change.
+
+#### Correcting this document on the series-registry gate
+
+What the gate actually bans, read from the script on 12 Oct 2026: only the
+eight legacy series slugs in `infra/series-registry-slugs.sh`
+(`abandoned-mining|maps-structures|abandoned|structures|testing|nasa|maps|demo`),
+and only when quoted. Every one of its five checks is built on that list; the
+token `series` does not appear in any of its patterns. So `?? 'drama'`,
+`register === 'drama'` and a two-literal union all pass, and an earlier version
+of this document was wrong to say otherwise.
+
+The design still holds, for the reason the slug file gives rather than the one
+this document gave: "a literal is a bet that one particular row exists in
+whatever database this build points at". That applies to series ids, which are
+rows. A prompt register is not a row, it is a code-level choice of which file to
+load, so `'drama'` as a literal in the mapping is fine. What must come from data
+is WHICH register a session is in.
 
 ### Verification run before those three commits
 
@@ -294,12 +314,11 @@ This is small, and the golden suite now guards it. Three edits:
 `chooseType()` needs no change: the drama filenames keep the `-type-1` /
 `-type-2` suffix so A/B routing works untouched.
 
-**The trap**: the register must resolve from session or registry data, never a
-string literal. `infra/series-registry-gate.sh` fails on `?? 'drama'`, on two
-literals on one executable line, and on `series === 'x'`. It bans `'demo'` too, so
-you cannot develop against a seeded slug by hardcoding it. A column on
-`autogen_sessions` (defaulting to the documentary register) is the clean shape, and
-matches decision 4.
+**Superseded.** This step was done on branch `claude/microdrama-drama-register`,
+but NOT as written above: `getSystemPrompt` had no callers. See section 1c for
+what was actually built and for the correction to the claim that used to sit
+here about what `series-registry-gate.sh` rejects. The one true part: it bans
+`'demo'`, so you cannot develop against a seeded slug by hardcoding it.
 
 Also extend the catalogue in `backend/src/lib/autogen/prompts.test.ts`
 (`SHARED_PROMPTS` / `TYPED_BASE_NAMES` around lines 47 to 66, and the
